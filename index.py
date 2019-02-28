@@ -141,7 +141,9 @@ class  TicketModel:
 db = DB()
 user_model = UserModel(db.get_connection())
 news_model = NewsModel(db.get_connection())
+tickets_model = NewsModel(db.get_connection())
 user_model.init_table()
+tickets_model.init_table()
 news_model.init_table()
 
 from flask import Flask, redirect, render_template
@@ -209,3 +211,5 @@ def delete_news(news_id):
 
 if __name__ == '__main__':
     app.run(port=8080, host='127.0.0.1', debug=True)
+
+
