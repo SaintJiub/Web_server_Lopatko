@@ -1,12 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-   <a href="/add_news">Добавить новость</a>
-    {% for item in news %}
+{% if "user_admin" %}
+
+   <a href="/add_ticket">Добавить ticket</a>
+          {% endif %}
+    {% for item in tickets %}
     <div class="alert alert-dark" role="alert">
         <h2>{{item[1]}}</h2>
         <div>{{item[2]}}</div>
-        <a href="/delete_news/{{item[0]}}">Удалить новость</a>
+        <div>Tickets: {{item[3]}}
+                 <a href="/buy_ticket/{{item[0]}}">купить ticket</a></div>
+           {% if "user_admin" %}
+
+                 <a href="/delete_ticket/{{item[0]}}">Удалить ticket</a>
+          {% endif %}
     </div>
 {% endfor %}
 {% endblock %}

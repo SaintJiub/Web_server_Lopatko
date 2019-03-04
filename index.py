@@ -37,7 +37,7 @@ class UserModel:
 
     def get(self, user_id):
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (str(user_id)))
+        cursor.execute("SELECT * FROM users WHERE id = "+str(user_id))
         row = cursor.fetchone()
         return row
 
@@ -79,7 +79,7 @@ class NewsModel:
 
     def get(self, news_id):
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM news WHERE id = ?", (str(news_id)))
+        cursor.execute("SELECT * FROM news WHERE id = "  + str(news_id))
         row = cursor.fetchone()
         return row
 
@@ -97,6 +97,7 @@ class NewsModel:
         cursor.execute('''DELETE FROM news WHERE id = ''' + str(news_id))
         cursor.close()
         self.connection.commit()
+
 
 
 class TicketModel:
@@ -124,7 +125,7 @@ class TicketModel:
 
     def get(self, news_id):
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM news WHERE id = ?", (str(news_id)))
+        cursor.execute("SELECT * FROM tickets WHERE id =" + str(news_id))
         row = cursor.fetchone()
         return row
 
@@ -134,22 +135,29 @@ class TicketModel:
         rows = cursor.fetchall()
         return rows
 
-    def delete(self, news_id):
+    def delete(self, ticker_id):
         cursor = self.connection.cursor()
-        cursor.execute('''DELETE FROM news WHERE id = ''' + str(news_id))
+        cursor.execute('''DELETE FROM tickets WHERE id = ''' + str(ticker_id))
         cursor.close()
         self.connection.commit()
+
+    def buy(self, ticker_id):
+        data = self.get(ticker_id)
+        cursor = self.connection.cursor()
+        cursor.execute('''UPDATE tickets set value='''+str(data[3]-1)+''' WHERE id = ''' + str(ticker_id))
+        cursor.close()
+        self.connection.commit()
+        return data[3]-1
 
 
 db = DB()
 user_model = UserModel(db.get_connection())
 news_model = NewsModel(db.get_connection())
-tickets_model = NewsModel(db.get_connection())
+tickets_model = TicketModel(db.get_connection())
 user_model.init_table()
 tickets_model.init_table()
-news_model.init_table()
 
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
@@ -178,6 +186,13 @@ class AddNewsForm(FlaskForm):
     submit = SubmitField('Добавить')
 
 
+class AddTicketForm(FlaskForm):
+    title = StringField('Рейс', validators=[DataRequired()])
+    content = TextAreaField('Текст', validators=[DataRequired()])
+    value = StringField('Количество мест', validators=[DataRequired()])
+    submit = SubmitField('Добавить')
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 user_id = None
@@ -193,7 +208,13 @@ def login():
     user_status, user_id = user_model.exists(form.username.data, form.password.data)
 
     if form.validate_on_submit() and user_status:
-        return redirect('/news')
+        id, name, password = user_model.get(user_id)
+        if name == 'lopatko' and id ==1:
+            session['user_admin']= True
+        else:
+
+            session['user_admin']= False
+        return redirect('/index')
     return render_template('login.html', title='Авторизация', form=form)
 
 
@@ -215,9 +236,9 @@ def register():
 @app.route('/news')
 def news():
     if user_status:
-        news_list = news_model.get_all(user_id)
-        print(news_list)
-        return render_template('news.html', news=news_list)
+        print(session)
+        tickets = tickets_model.get_all()
+        return render_template('news.html', tickets=tickets)
     else:
         return redirect('/login')
 
@@ -243,5 +264,36 @@ def delete_news(news_id):
     return redirect("/index")
 
 
+@app.route('/add_ticket', methods=['GET', 'POST'])
+def add_ticket():
+    if not user_status:
+        return redirect('/login')
+    form = AddTicketForm()
+    if form.validate_on_submit():
+        racename = form.title.data
+        value = form.value.data
+        content = form.content.data
+        tickets_model.insert(racename, content, value)
+        return redirect("/index")
+    return render_template('add_ticket.html', title='Добавление билета', form=form, username=user_id)
+
+
+@app.route('/delete_ticket/<int:ticket_id>', methods=['GET'])
+def delete_ticket(ticket_id):
+    if not user_status:
+        return redirect('/login')
+    tickets_model.delete(ticket_id)
+    return redirect("/index")
+
+
+@app.route('/buy_ticket/<int:ticket_id>', methods=['GET'])
+def buy_ticket(ticket_id):
+    if not user_status:
+        return redirect('/login')
+    if  tickets_model.buy(ticket_id) <=0:
+        tickets_model.delete(ticket_id)
+    return redirect("/index")
+
+
 if __name__ == '__main__':
-    app.run(port=8080, host='127.0.0.1', debug=True)
+    app.run(port=8081, host='127.0.0.1', debug=True)
