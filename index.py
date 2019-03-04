@@ -1,4 +1,6 @@
 import sqlite3
+
+
 class DB:
     def __init__(self):
         conn = sqlite3.connect('news.db', check_same_thread=False)
@@ -49,7 +51,7 @@ class UserModel:
         cursor = self.connection.cursor()
         cursor.execute("SELECT * FROM users WHERE user_name = ? AND password_hash = ?", (user_name, password_hash))
         row = cursor.fetchone()
-        return (True, row[0]) if row else (False,None)
+        return (True, row[0]) if row else (False, None)
 
 
 class NewsModel:
@@ -84,7 +86,7 @@ class NewsModel:
     def get_all(self, user_id=None):
         cursor = self.connection.cursor()
         if user_id:
-            cursor.execute("SELECT * FROM news WHERE user_id = "+(str(user_id))+" ORDER BY id DESC")
+            cursor.execute("SELECT * FROM news WHERE user_id = " + (str(user_id)) + " ORDER BY id DESC")
         else:
             cursor.execute("SELECT * FROM news")
         rows = cursor.fetchall()
@@ -92,12 +94,12 @@ class NewsModel:
 
     def delete(self, news_id):
         cursor = self.connection.cursor()
-        cursor.execute('''DELETE FROM news WHERE id = '''+str(news_id))
+        cursor.execute('''DELETE FROM news WHERE id = ''' + str(news_id))
         cursor.close()
         self.connection.commit()
 
 
-class  TicketModel:
+class TicketModel:
     def __init__(self, connection):
         self.connection = connection
 
@@ -134,9 +136,10 @@ class  TicketModel:
 
     def delete(self, news_id):
         cursor = self.connection.cursor()
-        cursor.execute('''DELETE FROM news WHERE id = '''+str(news_id))
+        cursor.execute('''DELETE FROM news WHERE id = ''' + str(news_id))
         cursor.close()
         self.connection.commit()
+
 
 db = DB()
 user_model = UserModel(db.get_connection())
@@ -148,7 +151,7 @@ news_model.init_table()
 
 from flask import Flask, redirect, render_template
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField,TextAreaField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 
@@ -158,26 +161,55 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
 
+
+class RegForm(FlaskForm):
+    username = StringField('Имя', validators=[DataRequired()])
+    surname = StringField('Фамилия', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    password_test = PasswordField('Повторите пароль', validators=[DataRequired()])
+    remember_me = BooleanField('Запомнить меня')
+    back = SubmitField('Назад')
+    reg = SubmitField('Зарегистрироваться')
+
+
 class AddNewsForm(FlaskForm):
     title = StringField('Заголовок новости', validators=[DataRequired()])
     content = TextAreaField('Текст новости', validators=[DataRequired()])
     submit = SubmitField('Добавить')
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 user_id = None
 user_status = False
+
+
 # http://127.0.0.1:8080/login
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    global user_id,user_status
+    global user_id, user_status
     form = LoginForm()
-    user_status, user_id = user_model.exists(form.username.data,form.password.data)
+    user_status, user_id = user_model.exists(form.username.data, form.password.data)
 
     if form.validate_on_submit() and user_status:
         return redirect('/news')
     return render_template('login.html', title='Авторизация', form=form)
+
+
+# http://127.0.0.1:8080/register
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    global user_id, user_status
+    form = RegForm()
+    if form.back.data:
+        return redirect('/login')
+    elif form.reg.data:
+        if form.validate_on_submit():
+            user_model.insert(form.username.data, form.password.data)
+            return redirect('/login')
+    return render_template('register.html', title='Авторизация', form=form)
+
 
 @app.route('/index')
 @app.route('/news')
@@ -189,6 +221,7 @@ def news():
     else:
         return redirect('/login')
 
+
 @app.route('/add_news', methods=['GET', 'POST'])
 def add_news():
     if not user_status:
@@ -197,9 +230,10 @@ def add_news():
     if form.validate_on_submit():
         title = form.title.data
         content = form.content.data
-        news_model.insert(title,content,user_id)
+        news_model.insert(title, content, user_id)
         return redirect("/index")
     return render_template('add_news.html', title='Добавление новости', form=form, username=user_id)
+
 
 @app.route('/delete_news/<int:news_id>', methods=['GET'])
 def delete_news(news_id):
@@ -211,5 +245,3 @@ def delete_news(news_id):
 
 if __name__ == '__main__':
     app.run(port=8080, host='127.0.0.1', debug=True)
-
-
