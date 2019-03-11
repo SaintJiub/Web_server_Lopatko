@@ -1,18 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Войти</h1>
+<div style="background: white; border-radius: 15px; width:34% ">
+    <center>
+        <h2>
+            <h1>Вход</h1>
+        </h2>
+    </center>
+</div>
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
-        <p>
-            {{ form.username.label }}<br>
-            {{ form.username }}<br>
-            {% for error in form.username.errors %}
-                <div class="alert alert-danger" role="alert">
+        <div style="background: white; border-radius: 15px; width:34% ">
+            <center>
+                <h3>
+                    <p>
+                        {{ form.username.label }}<br>
+                        {{ form.username }}<br>
+                        {% for error in form.username.errors %}
+                        <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>
             {% endfor %}
         </p>
+
+
         <p>
             {{ form.password.label }}<br>
             {{ form.password }}<br>
@@ -22,6 +33,9 @@
                 </div>
             {% endfor %}
         </p>
+                </h3>
+        </center>
+        </div>
         <p>{{ form.remember_me() }} {{ form.remember_me.label }}</p>
         <p>{{ form.submit() }}</p>
         <p>{{ form.rega() }}</p>
