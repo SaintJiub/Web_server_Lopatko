@@ -133,7 +133,19 @@ class TicketModel:
         cursor = self.connection.cursor()
         cursor.execute("SELECT * FROM tickets")
         rows = cursor.fetchall()
-        return rows
+        images = []
+        for r in rows:
+            if "самолёт" in r[2].lower():
+                images.append("images/plain.jpg")
+            elif "авто" in r[2].lower():
+                images.append("images/car.png")
+            elif "корабль" in r[2].lower():
+                images.append("images/boat.jpg")
+            elif "поезд" in r[2].lower():
+                images.append("images/train.jpg")
+            else:
+                images.append("")
+        return rows,images
 
     def delete(self, ticker_id):
         cursor = self.connection.cursor()
@@ -168,6 +180,7 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
+    rega = SubmitField('Регистрация')
 
 
 class RegForm(FlaskForm):
@@ -207,8 +220,12 @@ def login():
     form = LoginForm()
     user_status, user_id = user_model.exists(form.username.data, form.password.data)
 
+    if  form.rega.data:
+        return redirect('/register')
+
     if form.validate_on_submit() and user_status:
         id, name, password = user_model.get(user_id)
+        session["username"] = name
         if name == 'lopatko' and id ==1:
             session['user_admin']= True
         else:
@@ -229,6 +246,7 @@ def register():
         if form.validate_on_submit():
             user_model.insert(form.username.data, form.password.data)
             return redirect('/login')
+
     return render_template('register.html', title='Авторизация', form=form)
 
 
@@ -237,8 +255,9 @@ def register():
 def news():
     if user_status:
         print(session)
-        tickets = tickets_model.get_all()
-        return render_template('news.html', tickets=tickets)
+        tickets,images = tickets_model.get_all()
+        print(list(zip(tickets,images)))
+        return render_template('news.html', tickets=zip(tickets,images))
     else:
         return redirect('/login')
 
@@ -293,6 +312,12 @@ def buy_ticket(ticket_id):
     if  tickets_model.buy(ticket_id) <=0:
         tickets_model.delete(ticket_id)
     return redirect("/index")
+
+
+@app.route('/logout')
+def logout():
+    return redirect('/login')
+
 
 
 if __name__ == '__main__':

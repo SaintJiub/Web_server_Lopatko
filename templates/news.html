@@ -3,18 +3,26 @@
 {% block content %}
 {% if "user_admin" %}
 
-   <a href="/add_ticket">Добавить ticket</a>
+    <div style="background: white; border-radius: 15px; ">
+        <center>
+            <h2>
+        <a href="/add_ticket">Добавить ticket</a>
+            </h2>
+        </center>
+    </div>
           {% endif %}
     {% for item in tickets %}
-    <div class="alert alert-dark" role="alert">
-        <h2>{{item[1]}}</h2>
-        <div>{{item[2]}}</div>
-        <div>Tickets: {{item[3]}}
-                 <a href="/buy_ticket/{{item[0]}}">купить ticket</a></div>
-           {% if "user_admin" %}
+    <div style="background: white; border-radius: 5px;">
+        <div class="alert alert-dark" role="alert" style="background:url('static/{{item[1]}}')  no-repeat; background-size:25%; background-position:right;'">
+            <h2>{{item[0][1]}}</h2>
+            <div>{{item[0][2]}}</div>
+            <div>Tickets: {{item[0][3]}}
+                     <a href="/buy_ticket/{{item[0][0]}}">купить ticket</a></div>
+               {% if "user_admin" %}
 
-                 <a href="/delete_ticket/{{item[0]}}">Удалить ticket</a>
-          {% endif %}
+                     <a href="/delete_ticket/{{item[0][0]}}">Удалить ticket</a>
+              {% endif %}
+        </div>
     </div>
 {% endfor %}
 {% endblock %}
